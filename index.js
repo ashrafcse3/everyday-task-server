@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 require('dotenv').config();
 const port = 4000 || process.env.PORT;
@@ -32,9 +32,73 @@ async function run() {
 
         app.get('/tasks', async (req, res) => {
             const query = {};
-            const tasks = await tasksCollection.find(query).toArray();
+            const tasks = await (await tasksCollection.find(query).toArray()).reverse();
 
             res.send(tasks);
+        })
+
+        app.get('/task/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+
+            const task = await tasksCollection.findOne(query);
+
+            res.send(task);
+        })
+
+        app.get('/noncompletedtasks', async (req, res) => {
+            const query = { task_completed: false };
+            const tasks = await (await tasksCollection.find(query).toArray()).reverse();
+
+            res.send(tasks);
+        })
+
+        app.get('/completedtasks', async (req, res) => {
+            const query = { task_completed: true };
+            const tasks = await (await tasksCollection.find(query).toArray()).reverse();
+
+            res.send(tasks);
+        })
+
+        app.put('/maketaskcomplete/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const taskCompleted = {
+                $set: {
+                    task_completed: true
+                }
+            }
+
+            const result = await tasksCollection.updateOne(filter, taskCompleted, options);
+
+            res.send(result);
+        })
+
+        app.put('/maketaskuncomplete/:id', async (req, res) => {
+            const id = req.params.id;
+
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const taskNotCompleted = {
+                $set: {
+                    task_completed: false
+                }
+            }
+
+            const result = await tasksCollection.updateOne(filter, taskNotCompleted, options);
+
+            res.send(result);
+        })
+
+        app.delete('/task/:id', (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+
+            const result = tasksCollection.deleteOne(query);
+
+            res.send(result);
         })
     }
     finally { }
