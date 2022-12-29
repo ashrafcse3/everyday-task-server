@@ -19,6 +19,7 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 const tasksCollection = client.db("everyday-task").collection("tasks");
+const commentsCollection = client.db("everyday-task").collection("comments");
 
 
 
@@ -112,6 +113,30 @@ async function run() {
             const query = { _id: ObjectId(id) };
 
             const result = tasksCollection.deleteOne(query);
+
+            res.send(result);
+        })
+
+        // task comment
+        app.post('/comments', async (req, res) => {
+            const result = await commentsCollection.insertOne(req.body);
+
+            res.send(result);
+        })
+
+        app.get('/comments/:taskid', async (req, res) => {
+            const taskId = req.params.taskid;
+            const query = { task_id: taskId };
+            const comments = await (await commentsCollection.find(query).toArray()).reverse();
+
+            res.send(comments);
+        })
+
+        app.delete('/comments/:commentid', async (req, res) => {
+            const commentId = req.params.commentid;
+            const query = { _id: ObjectId(commentId) };
+
+            const result = await commentsCollection.deleteOne(query);
 
             res.send(result);
         })
